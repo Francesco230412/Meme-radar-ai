@@ -1,35 +1,28 @@
-import requests
-import time
+name: Meme Radar AI
 
-DEXSCREENER_API = "https://api.dexscreener.com/latest/dex/search?q=PEPE"
+"on":
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
 
-def scan_market():
-    try:
-        response = requests.get(DEXSCREENER_API, timeout=15)
-        data = response.json()
+jobs:
+  scan:
+    runs-on: ubuntu-latest
 
-        pairs = data.get("pairs", [])
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-        for pair in pairs:
-            name = pair.get("baseToken", {}).get("name", "Unknown")
-            symbol = pair.get("baseToken", {}).get("symbol", "???")
-            price = pair.get("priceUsd", "0")
-            volume = pair.get("volume", {}).get("h24", 0)
-            liquidity = pair.get("liquidity", {}).get("usd", 0)
-            chain = pair.get("chainId", "unknown")
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
 
-            print(f"""
-            TOKEN: {name} ({symbol})
-            CHAIN: {chain}
-            PRICE: ${price}
-            VOLUME 24H: ${volume}
-            LIQUIDITY: ${liquidity}
-            --------------------------
-            """)
+      - name: Install dependencies
+        run: pip install -r requirements.txt
 
-    except Exception as e:
-        print("Radar error:", e)
-
-if __name__ == "__main__":
-    print("MEME RADAR AI - SCANNER ONLINE")
-    scan_market()
+      - name: Run Meme Radar
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python main.py
