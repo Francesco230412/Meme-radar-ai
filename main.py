@@ -1,16 +1,17 @@
 import time
 from scanner import scan_tokens
 from analyzer import analyze_token
+from telegram_alerts import send_token_alert
 
 MIN_SCORE = 60
 MAX_RESULTS = 10
-SCAN_INTERVAL = 300  # 5 minuti
+SCAN_INTERVAL = 300
+
+sent_tokens = set()
 
 
 def process_tokens():
-    print("\n" + "=" * 40)
-    print("🛰️ MEME RADAR AI - SCANSIONE")
-    print("=" * 40)
+    print("\n🛰️ MEME RADAR AI - SCANSIONE")
 
     tokens = scan_tokens()
     results = []
@@ -18,26 +19,20 @@ def process_tokens():
     for pair in tokens:
         try:
             analysis = analyze_token(pair)
-
-            token = pair.get("baseToken", {})
-            symbol = token.get("symbol", "UNKNOWN")
-            name = token.get("name", "Unknown")
-            chain = pair.get("chainId", "unknown")
-            address = token.get("baseToken", {}).get("address", "")
-            price = pair.get("priceUsd", 0)
+            token_data = pair.get("baseToken", {})
 
             result = {
-                "name": name,
-                "symbol": symbol,
-                "chain": chain,
-                "address": address,
-                "price": price,
-                "score": analysis["score"],
-                "verdict": analysis["verdict"],
-                "signals": analysis["signals"],
-                "liquidity": analysis["liquidity"],
-                "volume": analysis["volume_24h"],
-                "change": analysis["price_change_1h"],
+                "name": token_data.get("name", "Unknown"),
+                "symbol": token_data.get("symbol", "?"),
+                "chain": pair.get("chainId", "?"),
+                "address": token_data.get("address", ""),
+                "price": float(pair.get("priceUsd") or 0),
+                "score": analysis.get("score", 0),
+                "verdict": analysis.get("verdict", "N/A"),
+                "signals": analysis.get("signals", []),
+                "liquidity": analysis.get("liquidity", 0),
+                "volume": analysis.get("volume_24h", 0),
+                "change": analysis.get("price_change_1h", 0),
             }
 
             results.append(result)
@@ -47,10 +42,7 @@ def process_tokens():
 
     results.sort(key=lambda x: x["score"], reverse=True)
 
-    print(f"\nToken analizzati: {len(results)}")
-
-    print("\n🏆 TOP TOKEN")
-    print("-" * 40)
+    print(f"Token analizzati: {len(results)}")
 
     for token in results[:MAX_RESULTS]:
         print(
@@ -59,37 +51,30 @@ def process_tokens():
             f"{token['verdict']}"
         )
 
-    print("\n🔥 TOKEN INTERESSANTI")
-    print("-" * 40)
-
+    # Invio alert Telegram
     for token in results:
         if token["score"] >= MIN_SCORE:
-            print(f"""
-🚀 {token['name']} ({token['symbol']})
-🌐 Network: {token['chain']}
-💰 Prezzo: ${token['price']}
-💧 Liquidità: ${token['liquidity']:,.0f}
-📊 Volume 24h: ${token['volume']:,.0f}
-📈 Variazione 1h: {token['change']}%
-🧠 Score: {token['score']}/100
-🔎 Segnali: {', '.join(token['signals'])}
-📍 Address: {token['address']}
-""")
+            key = f"{token['chain']}:{token['address']}"
+
+            if key not in sent_tokens:
+                if send_token_alert(token):
+                    sent_tokens.add(key)
+                    print(f"Alert inviato: {token['symbol']}")
 
     return results
 
 
 def main():
-    print("MEME RADAR AI ONLINE")
+    print("🚀 MEME RADAR AI AVVIATO")
     print("Scansione ogni 5 minuti")
 
     while True:
         try:
             process_tokens()
         except Exception as error:
-            print("Errore generale:", error)
+            print("Errore scansione:", error)
 
-        print(f"\n⏳ Prossima scansione tra {SCAN_INTERVAL} secondi...")
+        print("⏳ Attesa prossima scansione...")
         time.sleep(SCAN_INTERVAL)
 
 
