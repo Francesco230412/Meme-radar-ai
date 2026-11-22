@@ -1,25 +1,16 @@
-name: Meme Radar AI
+name: Test Telegram
 
-"on":
-  schedule:
-    - cron: "*/5 * * * *"
+on:
   workflow_dispatch:
 
 jobs:
-  scan:
+  test:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Install dependencies
-        run: pip install -r requirements.txt
-
-      - name: Run Meme Radar
-        run: python main.py
+      - name: Send Telegram test
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          python -c "import os,requests; r=requests.post('https://api.telegram.org/bot'+os.environ['TELEGRAM_BOT_TOKEN']+'/sendMessage',json={'chat_id':os.environ['TELEGRAM_CHAT_ID'],'text':'✅ MEME RADAR AI: collegamento Telegram funzionante!'},timeout=15); print(r.text); r.raise_for_status()"
