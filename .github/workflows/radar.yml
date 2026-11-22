@@ -1,6 +1,6 @@
 name: Meme Radar AI
 
-on:
+"on":
   schedule:
     - cron: "*/5 * * * *"
   workflow_dispatch:
