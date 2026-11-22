@@ -1,13 +1,9 @@
-import time
 from scanner import scan_tokens
 from analyzer import analyze_token
 from telegram_alerts import send_token_alert
 
 MIN_SCORE = 60
 MAX_RESULTS = 10
-SCAN_INTERVAL = 300
-
-sent_tokens = set()
 
 
 def process_tokens():
@@ -15,6 +11,7 @@ def process_tokens():
 
     tokens = scan_tokens()
     results = []
+    sent_tokens = set()
 
     for pair in tokens:
         try:
@@ -51,31 +48,27 @@ def process_tokens():
             f"{token['verdict']}"
         )
 
-    # Invio alert Telegram
     for token in results:
         if token["score"] >= MIN_SCORE:
-            key = f"{token['chain']}:{token['address']}"
-
-            if key not in sent_tokens:
+            try:
                 if send_token_alert(token):
-                    sent_tokens.add(key)
                     print(f"Alert inviato: {token['symbol']}")
+            except Exception as error:
+                print(f"Errore Telegram: {error}")
 
     return results
 
 
 def main():
-    print("🚀 MEME RADAR AI AVVIATO")
-    print("Scansione ogni 5 minuti")
+    print("🚀 MEME RADAR AI - AVVIO")
+    print("Modalità GitHub Actions: scansione singola")
 
-    while True:
-        try:
-            process_tokens()
-        except Exception as error:
-            print("Errore scansione:", error)
+    try:
+        process_tokens()
+        print("✅ Scansione completata")
 
-        print("⏳ Attesa prossima scansione...")
-        time.sleep(SCAN_INTERVAL)
+    except Exception as error:
+        print(f"❌ Errore scansione: {error}")
 
 
 if __name__ == "__main__":
