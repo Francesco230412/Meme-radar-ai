@@ -7,19 +7,19 @@ MAX_RESULTS = 10
 
 def get_category(score):
 if score >= 90:
-return “🔥 ELITE SIGNAL”
+return "🔥 ELITE SIGNAL"
 elif score >= 80:
-return “🚀 HIGH CONVICTION”
+return "🚀 HIGH CONVICTION"
 elif score >= 65:
-return “👀 WATCHLIST”
-return “⚪ Nessun segnale”
+return "👀 WATCHLIST"
+return "⚪ Nessun segnale"
 
 def process_tokens():
-print(”\n🛰️ MEME RADAR AI - SCANSIONE”)
+print("\n🛰️ MEME RADAR AI - SCANSIONE")
 
 tokens = scan_tokens()
 results = []
-analyzed_addresses = set()
+analyzed_addresses = set() in
 for pair in tokens:
     try:
         analysis = analyze_token(pair)
@@ -85,9 +85,9 @@ print(f"\n📬 Alert inviati: {alerts_sent}")
 return results
 
 def main():
-print(“🚀 MEME RADAR AI - AVVIO”)
-print(“Modalità GitHub Actions: scansione singola”)
-print(f”Soglia minima alert: {MIN_SCORE}/100”)
+print("🚀 MEME RADAR AI - AVVIO")
+print("Modalità GitHub Actions: scansione singola")
+print(f"Soglia minima alert: {MIN_SCORE}/100")
 
 try:
     process_tokens()
@@ -95,5 +95,5 @@ try:
 except Exception as error:
     print(f"❌ Errore scansione: {error}")
 
-if name == “main”:
+if name == "main":
 main()
