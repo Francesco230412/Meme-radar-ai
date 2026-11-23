@@ -26,15 +26,13 @@ for pair in tokens:
         token_data = pair.get("baseToken", {})
         address = token_data.get("address", "")
         chain = pair.get("chainId", "?")
-        # Evita di analizzare più volte lo stesso token
-        # sulla stessa blockchain durante questa scansione.
+        # Evita duplicati nella stessa scansione
         token_id = f"{chain}:{address.lower()}"
         if not address or token_id in analyzed_addresses:
             continue
         analyzed_addresses.add(token_id)
-        # Conserva tutte le metriche prodotte dall'analizzatore.
+        # Conserva tutte le metriche dell'analizzatore
         result = dict(analysis)
-        # Dati identificativi e di mercato.
         result.update({
             "name": token_data.get("name", "Unknown"),
             "symbol": token_data.get("symbol", "?"),
@@ -70,7 +68,7 @@ alerts_sent = 0
 for token in results:
     if token["score"] < MIN_SCORE:
         continue
-    # Non inviare segnali promozionali per token ad alto rischio.
+    # Blocco token ad alto rischio
     if str(token.get("risk", "")).upper() == "ALTO":
         print(f"⛔ {token['symbol']}: escluso per rischio alto")
         continue
