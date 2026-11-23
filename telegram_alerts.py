@@ -5,139 +5,157 @@ import requests
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 
-TELEGRAM_URL = (
-f”https://api.telegram.org/bot{BOT_TOKEN}/sendMessage”
-)
+TELEGRAM_URL = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+
 
 def format_number(value):
-try:
-return f”{float(value):,.2f}”
-except (TypeError, ValueError):
-return “N/D”
+    try:
+        return f"{float(value):,.8f}".rstrip("0").rstrip(".")
+    except (TypeError, ValueError):
+        return "N/D"
+
 
 def format_money(value):
-try:
-return f”${float(value):,.0f}”
-except (TypeError, ValueError):
-return “N/D”
+    try:
+        return f"${float(value):,.2f}"
+    except (TypeError, ValueError):
+        return "N/D"
+
 
 def safe_text(value):
-return html.escape(str(value))
+    return html.escape(str(value))
+
 
 def send_message(message):
-if not BOT_TOKEN or not CHAT_ID:
-print(“Telegram credentials missing”)
-return False
-
-try:
-    response = requests.post(
-        TELEGRAM_URL,
-        json={
-            "chat_id": CHAT_ID,
-            "text": message,
-            "parse_mode": "HTML",
-            "disable_web_page_preview": True,
-        },
-        timeout=15,
-    )
-    response.raise_for_status()
-    data = response.json()
-    if not data.get("ok"):
-        print("Telegram API error:", data)
+    if not BOT_TOKEN or not CHAT_ID:
+        print("Telegram credentials missing")
         return False
-    print("Telegram alert sent")
-    return True
-except Exception as error:
-    print("Telegram error:", error)
-    return False
+
+    try:
+        response = requests.post(
+            TELEGRAM_URL,
+            json={
+                "chat_id": CHAT_ID,
+                "text": message,
+                "parse_mode": "HTML",
+                "disable_web_page_preview": True,
+            },
+            timeout=15,
+        )
+
+        response.raise_for_status()
+
+        data = response.json()
+
+        if not data.get("ok"):
+            print(f"Telegram API error: {data}")
+            return False
+
+        print("Telegram alert sent")
+        return True
+
+    except Exception as error:
+        print(f"Telegram error: {error}")
+        return False
+
 
 def send_token_alert(token):
 
-score = token.get("score", 0)
-category = safe_text(token.get("category", "WATCHLIST"))
-risk = safe_text(token.get("risk", "NON VERIFICATO"))
-confidence = safe_text(
-    token.get("confidence", "NON VERIFICATA")
-)
-signals = token.get("signals", [])
-negative_signals = token.get("negative_signals", [])
-if not isinstance(signals, list):
-    signals = []
-if not isinstance(negative_signals, list):
-    negative_signals = []
-positive_text = (
-    "\n".join(f"  ✅ {safe_text(item)}" for item in signals[:5])
-    if signals else "  Nessun segnale disponibile"
-)
-negative_text = (
-    "\n".join(
-        f"  ⚠️ {safe_text(item)}"
-        for item in negative_signals[:5]
-    )
-    if negative_signals else "  Nessun segnale negativo rilevato"
-)
-message = f"""
+    score = token.get("score", 0)
+    category = safe_text(token.get("category", "WATCHLIST"))
+    risk = safe_text(token.get("risk", "NON VERIFICATO"))
+    confidence = safe_text(token.get("confidence", "NON VERIFICATA"))
 
-🛰️ MEME RADAR AI — PRO ANALYSIS
+    signals = token.get("signals", [])
+    negative_signals = token.get("negative_signals", [])
+
+    if not isinstance(signals, list):
+        signals = []
+
+    if not isinstance(negative_signals, list):
+        negative_signals = []
+
+    positive_text = (
+        "\n".join(
+            f"✅ {safe_text(item)}"
+            for item in signals[:5]
+        )
+        if signals
+        else "Nessun segnale disponibile"
+    )
+
+    negative_text = (
+        "\n".join(
+            f"⚠️ {safe_text(item)}"
+            for item in negative_signals[:5]
+        )
+        if negative_signals
+        else "Nessun segnale negativo rilevato"
+    )
+
+    message = f"""
+<b>MEME RADAR AI - PRO ANALYSIS</b>
 
 {category}
 
-🪙 {safe_text(token.get(‘name’, ‘Unknown’))}
-Token: {safe_text(token.get(‘symbol’, ‘?’))}
-🌐 Blockchain: {safe_text(token.get(‘chain’, ‘?’))}
+🪙 <b>{safe_text(token.get('name', 'Unknown'))}</b>
+<b>Token:</b> {safe_text(token.get('symbol', '?'))}
+🌐 <b>Blockchain:</b> {safe_text(token.get('chain', '?'))}
 
 ━━━━━━━━━━━━━━━━━━
 
-🎯 SCORE: {score}/100
-🧠 Valutazione: {safe_text(token.get(‘verdict’, ‘N/A’))}
-⚠️ Rischio: {risk}
-📊 Affidabilità dati: {confidence}
+🎯 <b>SCORE: {score}/100</b>
+🧠 <b>Valutazione:</b> {safe_text(token.get('verdict', 'N/A'))}
+⚠️ <b>Rischio:</b> {risk}
+📊 <b>Affidabilità dati:</b> {confidence}
 
 ━━━━━━━━━━━━━━━━━━
 
-💰 PREZZO E MERCATO
+💰 <b>MERCATO</b>
 
-Prezzo: ${format_number(token.get(‘price’))}
-Liquidità: {format_money(token.get(‘liquidity’))}
-Volume 24h: {format_money(token.get(‘volume’))}
-Market Cap: {format_money(token.get(‘market_cap’))}
-FDV: {format_money(token.get(‘fdv’))}
-
-━━━━━━━━━━━━━━━━━━
-
-📈 MOMENTUM
-
-Variazione 5m: {format_number(token.get(‘price_change_5m’))}%
-Variazione 1h: {format_number(token.get(‘price_change_1h’))}%
-Variazione 6h: {format_number(token.get(‘price_change_6h’))}%
-Variazione 24h: {format_number(token.get(‘price_change_24h’))}%
+Prezzo: ${format_number(token.get('price'))}
+Liquidità: {format_money(token.get('liquidity'))}
+Volume 24h: {format_money(token.get('volume'))}
+Market Cap: {format_money(token.get('market_cap'))}
+FDV: {format_money(token.get('fdv'))}
 
 ━━━━━━━━━━━━━━━━━━
 
-📦 VOLUMI
+📈 <b>MOMENTUM</b>
 
-Volume 5m: {format_money(token.get(‘volume_5m’))}
-Volume 1h: {format_money(token.get(‘volume_1h’))}
-Volume 6h: {format_money(token.get(‘volume_6h’))}
-Volume 24h: {format_money(token.get(‘volume_24h’, token.get(‘volume’)))}
+5m: {format_number(token.get('price_change_5m'))}%
+1h: {format_number(token.get('price_change_1h'))}%
+6h: {format_number(token.get('price_change_6h'))}%
+24h: {format_number(token.get('price_change_24h'))}%
 
 ━━━━━━━━━━━━━━━━━━
 
-🟢 SEGNALI POSITIVI
+📦 <b>VOLUMI</b>
+
+5m: {format_money(token.get('volume_5m'))}
+1h: {format_money(token.get('volume_1h'))}
+6h: {format_money(token.get('volume_6h'))}
+24h: {format_money(token.get('volume_24h', token.get('volume')))}
+
+━━━━━━━━━━━━━━━━━━
+
+🟢 <b>SEGNALI POSITIVI</b>
 
 {positive_text}
 
-🔴 SEGNALI NEGATIVI
+━━━━━━━━━━━━━━━━━━
+
+🔴 <b>SEGNALI NEGATIVI</b>
 
 {negative_text}
 
 ━━━━━━━━━━━━━━━━━━
 
-📍 CONTRACT ADDRESS
+📍 <b>CONTRACT ADDRESS</b>
 
-{safe_text(token.get(‘address’, ‘’))}
+<code>{safe_text(token.get('address', ''))}</code>
 
-Analisi automatica. Non costituisce consiglio finanziario.
-“””
+<i>Analisi automatica - Non costituisce consiglio finanziario.</i>
+"""
 
-return send_message(message)
+    return send_message(message)
